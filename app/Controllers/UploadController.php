@@ -44,19 +44,12 @@ class UploadController {
             header("Location: index.php"); exit;
         }
 
-      /*  $upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
+       $upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
         if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
             $_SESSION['err_msg'] = "Failed to upload file.";
             header("Location: index.php"); exit;
-        }*/
+        }
 
-$upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
-
-if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-    $_SESSION['err_msg'] = "Failed to upload file.";
-    header("Location: index.php"); 
-    exit;
-}
 
 
         $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
@@ -70,7 +63,7 @@ if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
                 $inventory = trim($row[0] ?? '');
                 if ($inventory === '') continue;
 
-                $this->bookModel->insertOrUpdate(
+                $this->bookModel->insertIfNotExists(
                     $inventory,
                     trim($row[1] ?? ''),
                     trim($row[2] ?? ''),
@@ -83,10 +76,7 @@ if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
             $this->bookModel->rollBack();
             error_log($e->getMessage());
             $_SESSION['err_msg'] = "Error reading Excel file.";
-        } finally {
-            if (file_exists($upload_path)) unlink($upload_path);
-        }
-
+        } 
         header("Location: index.php"); exit;
     }
 }

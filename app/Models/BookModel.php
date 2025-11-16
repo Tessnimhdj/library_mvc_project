@@ -12,19 +12,30 @@ class BookModel {
     public function commit() { return $this->db->commit(); }
     public function rollBack() { return $this->db->rollBack(); }
 
-    public function insertOrUpdate($inventory, $title, $author, $notes) {
+    public function insertIfNotExists($inventory, $title, $author, $notes) {
         try {
-            $stmt = $this->db->prepare("INSERT INTO books (inventory_number, title, author, notes)
-                VALUES (:inventory, :title, :author, :notes)
-                ON DUPLICATE KEY UPDATE title = VALUES(title), author = VALUES(author), notes = VALUES(notes)");
+            // تحقق أولاً إذا كانت القيمة موجودة
+            $checkStmt = $this->db->prepare("SELECT COUNT(*) FROM books WHERE inventory_number = :inventory");
+            $checkStmt->execute([':inventory' => $inventory]);
+            $count = $checkStmt->fetchColumn();
 
-            $stmt->execute([
+            if ($count > 0) {
+                // القيمة موجودة مسبقاً، لا ندخلها مرة أخرى
+                return false;
+            }
+
+            // إذا لم توجد، نقوم بالإدخال
+            $stmt = $this->db->prepare("INSERT INTO books (inventory_number, title, author, notes)
+                VALUES (:inventory, :title, :author, :notes)");
+
+            $result = $stmt->execute([
                 ':inventory' => $inventory,
                 ':title' => $title,
                 ':author' => $author,
                 ':notes' => $notes
             ]);
-            return true;
+
+            return $result;
         } catch (PDOException $e) {
             error_log($e->getMessage());
             return false;
