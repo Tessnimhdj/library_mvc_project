@@ -5,8 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 include_once __DIR__ . '/../Models/BookModel.php';
-include_once __DIR__ . '/../../vendor/autoload.php';
- include_once __DIR__ . '/../config/Config.php';
+include_once __DIR__ . '/../../../Vendor/autoload.php';
+ include_once __DIR__ . '/../../../Config/Config.php';
 ;
 
 class UploadController {

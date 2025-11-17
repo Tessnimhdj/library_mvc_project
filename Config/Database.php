@@ -1,5 +1,5 @@
 <?php
-include_once __DIR__ . '/../config/Config.php';
+include_once __DIR__ . '/Config.php';
 
 class Database {
     private static $dbInstance = null;

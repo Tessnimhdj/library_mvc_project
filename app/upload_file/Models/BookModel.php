@@ -1,5 +1,5 @@
 <?php
-include_once __DIR__ . '/Database.php';
+include_once __DIR__ . '/../../../Config/Database.php';
 
 class BookModel {
     private $db;
