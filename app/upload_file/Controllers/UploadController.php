@@ -1,13 +1,18 @@
 <?php
 
+namespace app\upload_file\Controllers;
+use app\upload_file\Models\BookModel;
+
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+
 include_once __DIR__ . '/../Models/BookModel.php';
-include_once __DIR__ . '/../../../Vendor/autoload.php';
- include_once __DIR__ . '/../../../Config/Config.php';
-;
+require_once __DIR__ . '/../../../vendor/autoload.php';     
+require_once __DIR__ . '/../../../config/Config.php';        
+
 
 class UploadController {
     private $bookModel;
@@ -77,6 +82,8 @@ class UploadController {
             error_log($e->getMessage());
             $_SESSION['err_msg'] = "Error reading Excel file.";
         } 
-        header("Location: index.php"); exit;
+           header("Location: http://localhost/mes_projet/library_mvc_project/"); exit;
+
+
     }
 }

@@ -1,0 +1,6 @@
+RewriteEngine On
+RewriteBase /mes_projet/library_mvc_project/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]

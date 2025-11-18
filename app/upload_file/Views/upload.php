@@ -18,7 +18,8 @@
             </div>
         <?php endif; ?>
 
-        <form action="import" method="post" enctype="multipart/form-data">
+        <form action="/mes_projet/library_mvc_project/upload/import" method="post" enctype="multipart/form-data">
+
             <div class="mb-3">
                 <label for="input_file" class="form-label">Choose file</label>
                 <input type="file" name="input_file" class="form-control" accept=".xls,.xlsx">

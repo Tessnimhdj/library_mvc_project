@@ -1,4 +1,9 @@
 <?php
+
+namespace app\upload_file\Models;
+use PDOException;
+use Database;
+
 include_once __DIR__ . '/../../../Config/Database.php';
 
 class BookModel {
