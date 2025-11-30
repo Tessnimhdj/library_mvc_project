@@ -32,30 +32,36 @@ class UploadController {
             http_response_code(405); exit("Method Not Allowed");
         }
 
+        // احصل على المسار الأساسي للمشروع
+        $basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+        $redirectUrl = $basePath . '/';
+
         if (!isset($_FILES['input_file']) || $_FILES['input_file']['name'] === '') {
             $_SESSION['err_msg'] = "Please select a file.";
-            header("Location: index.php"); exit;
+            header("Location: $redirectUrl"); 
+            exit;
         }
 
         $file = $_FILES['input_file'];
 
         if (!in_array($file['type'], ALLOWED_MIMES)) {
             $_SESSION['err_msg'] = "Invalid file type.";
-            header("Location: index.php"); exit;
+            header("Location: $redirectUrl"); 
+            exit;
         }
 
         if ($file['size'] > MAX_UPLOAD_BYTES) {
             $_SESSION['err_msg'] = "File too large. Max 5MB.";
-            header("Location: index.php"); exit;
+            header("Location: $redirectUrl"); 
+            exit;
         }
 
-       $upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
+        $upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
         if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
             $_SESSION['err_msg'] = "Failed to upload file.";
-            header("Location: index.php"); exit;
+            header("Location: $redirectUrl"); 
+            exit;
         }
-
-
 
         $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
         try {
@@ -82,8 +88,8 @@ class UploadController {
             error_log($e->getMessage());
             $_SESSION['err_msg'] = "Error reading Excel file.";
         } 
-           header("Location: http://localhost/mes_projet/library_mvc_project/"); exit;
-
-
+        
+        header("Location: $redirectUrl"); 
+        exit;
     }
 }

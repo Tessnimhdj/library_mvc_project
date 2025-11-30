@@ -11,7 +11,7 @@ define('ALLOWED_MIMES', [
     'application/vnd.ms-excel'
 ]);
 
-define('UPLOAD_DIR', __DIR__ . '/Public/Uploads');
+define('UPLOAD_DIR', realpath(__DIR__ . '/../Public/Uploads') . DIRECTORY_SEPARATOR);
 
 if (!is_dir(UPLOAD_DIR)) {
     mkdir(UPLOAD_DIR, 0755, true);
