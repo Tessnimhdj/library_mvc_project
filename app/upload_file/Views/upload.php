@@ -1,3 +1,8 @@
+<?php
+/**
+ * Upload form. Renders import_report when the controller provides one.
+ */
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -23,6 +28,50 @@
             <div class="alert alert-danger" style="margin:10px 0;">
                 <?= htmlspecialchars($errorMsg, ENT_QUOTES, 'UTF-8'); ?>
             </div>
+        <?php endif; ?>
+
+        <?php // تقرير نتيجة الاستيراد ?>
+        <?php if (isset($import_report) && is_array($import_report)): ?>
+            <?php
+            $addedCount = (int) ($import_report['added'] ?? 0);
+            $skippedCount = (int) ($import_report['skipped'] ?? 0);
+            $failedCount = (int) ($import_report['failed_count'] ?? 0);
+            $failedRows = (isset($import_report['failed']) && is_array($import_report['failed']))
+                ? $import_report['failed']
+                : [];
+            $shownFailed = count($failedRows);
+            ?>
+            <div class="alert alert-info" style="margin:10px 0;">
+                <span style="margin-right:16px;"><strong>Added:</strong> <?= htmlspecialchars((string) $addedCount, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span style="margin-right:16px;"><strong>Skipped (duplicates):</strong> <?= htmlspecialchars((string) $skippedCount, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span><strong>Failed:</strong> <?= htmlspecialchars((string) $failedCount, ENT_QUOTES, 'UTF-8'); ?></span>
+            </div>
+
+            <?php if ($failedCount > 0): ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Excel row</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($failedRows as $failure): ?>
+                            <?php if (!is_array($failure)) { continue; } ?>
+                            <tr>
+                                <td><?= htmlspecialchars((string) (int) ($failure['row'] ?? 0), ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?= htmlspecialchars((string) ($failure['reason'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php if ($failedCount > $shownFailed): ?>
+                    <p style="margin:10px 0;">
+                        Showing the first <?= htmlspecialchars((string) (int) $shownFailed, ENT_QUOTES, 'UTF-8'); ?>
+                        of <?= htmlspecialchars((string) (int) $failedCount, ENT_QUOTES, 'UTF-8'); ?> failed rows.
+                    </p>
+                <?php endif; ?>
+            <?php endif; ?>
         <?php endif; ?>
 
         <form action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" method="post" enctype="multipart/form-data">
