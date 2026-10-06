@@ -1,16 +1,30 @@
 <?php
 
+/**
+ * Maps a request URI to one public controller action under app/.
+ */
 class Router
 {
     private static ?string $basePath = null;
 
+    /**
+     * Normalizes the request URI and dispatches it.
+     */
     public static function dispatch()
     {
         self::$basePath = self::detectBasePath();
         $uri = self::normalizeUri($_SERVER['REQUEST_URI']);
-        self::autoRoute($uri);
+
+        try {
+            self::autoRoute($uri);
+        } catch (\Throwable $e) {
+            self::show404($uri);
+        }
     }
 
+    /**
+     * Returns the application base path.
+     */
     public static function basePath(): string
     {
         if (self::$basePath === null) {
@@ -20,6 +34,9 @@ class Router
         return self::$basePath;
     }
 
+    /**
+     * Builds an absolute path from the application base path.
+     */
     public static function url(string $path = '/'): string
     {
         $base = self::basePath();
@@ -30,29 +47,52 @@ class Router
         return ($base === '' ? '' : $base) . '/' . ltrim($path, '/');
     }
 
+    /**
+     * Reads the directory that contains the front controller.
+     */
     private static function detectBasePath(): string
     {
         $basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
         return rtrim($basePath, '/');
     }
 
+    /**
+     * Resolves the controller and action. The home URI calls UploadController::index.
+     */
     private static function autoRoute(string $uri): void
     {
         $uri = trim($uri, '/');
 
         if ($uri === '') {
-            $controllerName = 'UploadController';
+            $controllerSegment = 'Upload';
             $methodName = 'index';
         } else {
             $segments = explode('/', $uri);
-            $controllerName = ucfirst($segments[0]) . 'Controller';
-            $methodName = isset($segments[1]) && $segments[1] !== '' ? $segments[1] : 'index';
-            $methodName = lcfirst(str_replace('-', '', ucwords($methodName, '-')));
+            $controllerSegment = $segments[0];
+            $methodSegment = (isset($segments[1]) && $segments[1] !== '') ? $segments[1] : 'index';
+
+            if (!self::isValidSegment($controllerSegment) || !self::isValidSegment($methodSegment)) {
+                self::show404($uri);
+                return;
+            }
+
+            $methodName = lcfirst(str_replace('-', '', ucwords($methodSegment, '-')));
+        }
+
+        if (!self::isValidSegment($controllerSegment) || !self::isValidSegment($methodName)) {
+            self::show404($uri);
+            return;
+        }
+
+        $controllerName = ucfirst($controllerSegment) . 'Controller';
+        if (!self::isValidSegment($controllerName)) {
+            self::show404($uri);
+            return;
         }
 
         $controllerInfo = self::findController($controllerName);
-        if (!$controllerInfo) {
-            self::show404($uri, "Controller not found: $controllerName");
+        if ($controllerInfo === null) {
+            self::show404($uri);
             return;
         }
 
@@ -60,91 +100,131 @@ class Router
 
         $controllerClass = $controllerInfo['class'];
         if (!class_exists($controllerClass)) {
-            self::show404($uri, "Controller class not found: $controllerClass");
+            self::show404($uri);
             return;
         }
 
-        $controller = new $controllerClass;
+        $classFile = (new \ReflectionClass($controllerClass))->getFileName();
+        $classReal = $classFile === false ? false : realpath($classFile);
+        if ($classReal === false || str_replace('\\', '/', $classReal) !== $controllerInfo['file']) {
+            self::show404($uri);
+            return;
+        }
+
+        $controller = new $controllerClass();
 
         if (!self::isRoutableMethod($controller, $methodName)) {
-            self::show404($uri, "Method '$methodName' not found in $controllerClass");
+            self::show404($uri);
             return;
         }
 
         $controller->$methodName();
     }
 
-    private static function isRoutableMethod(object $controller, string $methodName): bool
+    /**
+     * Accepts a segment that starts with a letter and then uses only letters, digits, or underscores.
+     */
+    private static function isValidSegment(string $segment): bool
     {
-        if ($methodName === '' || str_starts_with($methodName, '__') || !method_exists($controller, $methodName)) {
-            return false;
-        }
-
-        $method = new ReflectionMethod($controller, $methodName);
-
-        return $method->isPublic();
+        return preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $segment) === 1;
     }
 
+    /**
+     * Finds a controller file under app/{feature}/Controllers and rejects paths outside app/.
+     */
     private static function findController(string $controllerName): ?array
     {
         $projectRoot = realpath(__DIR__ . '/../..');
-        $appPath = $projectRoot . '/app';
-        $searchedPaths = [];
-
-        if (is_dir($appPath)) {
-            $folders = array_filter(glob($appPath . '/*'), 'is_dir');
-            foreach ($folders as $folderPath) {
-                $folderName = basename($folderPath);
-                $controllerFile = $folderPath . '/Controllers/' . $controllerName . '.php';
-                $searchedPaths[] = $controllerFile;
-
-                if (file_exists($controllerFile)) {
-                    return [
-                        'class' => "app\\$folderName\\Controllers\\$controllerName",
-                        'file' => $controllerFile
-                    ];
-                }
-            }
+        if ($projectRoot === false) {
+            return null;
         }
 
-        self::logSearchedPaths($controllerName, $searchedPaths);
+        $appRoot = realpath($projectRoot . DIRECTORY_SEPARATOR . 'app');
+        if ($appRoot === false) {
+            return null;
+        }
+
+        $appRoot = rtrim(str_replace('\\', '/', $appRoot), '/');
+        $folders = glob($appRoot . '/*', GLOB_ONLYDIR);
+        if ($folders === false) {
+            return null;
+        }
+
+        foreach ($folders as $folderPath) {
+            $candidate = $folderPath . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $controllerName . '.php';
+            $resolved = realpath($candidate);
+            if ($resolved === false) {
+                continue;
+            }
+
+            $resolved = str_replace('\\', '/', $resolved);
+            $expectedSuffix = '/Controllers/' . $controllerName . '.php';
+            if (!str_starts_with($resolved, $appRoot . '/') || !str_ends_with($resolved, $expectedSuffix)) {
+                continue;
+            }
+
+            $folderName = basename(str_replace('\\', '/', $folderPath));
+
+            return [
+                'class' => "app\\$folderName\\Controllers\\$controllerName",
+                'file' => $resolved
+            ];
+        }
 
         return null;
     }
 
-    private static function logSearchedPaths(string $controllerName, array $paths)
+    /**
+     * Allows a public instance method declared on the controller class itself.
+     */
+    private static function isRoutableMethod(object $controller, string $methodName): bool
     {
-        $logFile = __DIR__ . '/../logs/errors.log';
-        if (!file_exists(dirname($logFile))) {
-            mkdir(dirname($logFile), 0755, true);
+        if (!self::isValidSegment($methodName) || str_starts_with($methodName, '__')) {
+            return false;
         }
 
-        $logMessage = "[" . date('Y-m-d H:i:s') . "] Searching for $controllerName in:\n";
-        foreach ($paths as $path) {
-            $exists = file_exists($path) ? 'EXISTS' : 'NOT FOUND';
-            $logMessage .= "  - [$exists] $path\n";
+        try {
+            $method = new \ReflectionMethod($controller, $methodName);
+        } catch (\ReflectionException $e) {
+            return false;
         }
 
-        file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND);
+        return $method->isPublic()
+            && !$method->isStatic()
+            && !$method->isConstructor()
+            && !$method->isDestructor()
+            && $method->getDeclaringClass()->getName() === get_class($controller);
     }
 
+    /**
+     * Removes the application base path and the query string from the request URI.
+     */
     private static function normalizeUri($uri)
     {
-        if (str_starts_with($uri, self::$basePath)) {
+        if (self::$basePath !== '' && str_starts_with($uri, self::$basePath)) {
             $uri = substr($uri, strlen(self::$basePath));
         }
 
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
-        if ($path === '' || $path === null) $path = '/';
-        if (!str_starts_with($path, '/')) $path = '/' . $path;
+        if ($path === '' || $path === null) {
+            $path = '/';
+        }
+        if (!str_starts_with($path, '/')) {
+            $path = '/' . $path;
+        }
 
         return rtrim($path, '/') ?: '/';
     }
 
-    private static function show404(string $uri, string $message = null)
+    /**
+     * Sends a generic 404 response and records the URI without internal details.
+     */
+    private static function show404(string $uri): void
     {
-        http_response_code(404);
+        if (!headers_sent()) {
+            http_response_code(404);
+        }
 
         echo "<!DOCTYPE html>
 <html lang='en'>
@@ -185,15 +265,12 @@ class Router
 </html>";
 
         $logFile = __DIR__ . '/../logs/errors.log';
-        if (!file_exists(dirname($logFile))) {
-            mkdir(dirname($logFile), 0755, true);
+        $directory = dirname($logFile);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
         }
 
-        $logMessage  = "[" . date('Y-m-d H:i:s') . "] 404 Error - Route not found: $uri";
-        if ($message) {
-            $logMessage .= " | Details: $message";
-        }
-
+        $logMessage = "[" . date('Y-m-d H:i:s') . "] 404 Error - Route not found: " . $uri;
         file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND);
     }
 }

@@ -107,3 +107,19 @@
   - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/Services/Controllers/TestController.php
 
 [2026-10-06 00:58:53] 404 Error - Route not found: test | Details: Controller not found: TestController
+[2026-10-06 12:34:00] 404 Error - Route not found: /
+[2026-10-06 12:34:00] 404 Error - Route not found: /upload
+[2026-10-06 12:34:01] 404 Error - Route not found: /upload/import
+[2026-10-06 12:34:01] 404 Error - Route not found: upload/import-now
+[2026-10-06 12:34:01] 404 Error - Route not found: /upload/logError
+[2026-10-06 12:34:01] 404 Error - Route not found: upload/__construct
+[2026-10-06 12:34:01] 404 Error - Route not found: ../upload
+[2026-10-06 12:35:30] 404 Error - Route not found: upload/import-now
+[2026-10-06 12:35:30] 404 Error - Route not found: upload/logError
+[2026-10-06 12:35:30] 404 Error - Route not found: upload/__construct
+[2026-10-06 12:35:30] 404 Error - Route not found: ../upload
+[2026-10-06 12:35:59] 404 Error - Route not found: upload/import-now
+[2026-10-06 12:35:59] 404 Error - Route not found: upload/logError
+[2026-10-06 12:40:15] 404 Error - Route not found: upload/__construct
+[2026-10-06 12:40:58] 404 Error - Route not found: nothing/index
+[2026-10-06 12:41:00] 404 Error - Route not found: nothing/index
