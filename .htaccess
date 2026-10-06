@@ -1,10 +1,22 @@
+# Disable directory listings.
+# تعطيل عرض محتويات المجلدات
+Options -Indexes
+
 RewriteEngine On
 RewriteBase /mes_projet/library_mvc_project/
 
+# Block direct access to internal application folders.
+# منع الوصول المباشر إلى مجلدات التطبيق الداخلية
+RewriteRule ^(app|Config|Core|Services|vendor)(/|$) - [F,NC,L]
+
+# Send requests that are not real files or directories to the front controller.
+# إرسال الطلبات التي ليست ملفات أو مجلدات حقيقية إلى الواجهة
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
 
+# Deny the environment file.
+# منع تنزيل ملف البيئة
 <FilesMatch "^\.env$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -13,4 +25,10 @@ RewriteRule ^ index.php [L]
         Order allow,deny
         Deny from all
     </IfModule>
+</FilesMatch>
+
+# Deny hidden files and sensitive extensions.
+# منع الملفات المخفية والامتدادات الحساسة
+<FilesMatch "(^\.)|(\.(env|json|lock|md|sql|log|ini|dist)$)">
+    Require all denied
 </FilesMatch>

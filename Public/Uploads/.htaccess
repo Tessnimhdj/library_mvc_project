@@ -1,3 +1,5 @@
+# Deny all direct web access to uploaded files.
+# منع الوصول المباشر إلى كل الملفات المرفوعة
 <IfModule mod_authz_core.c>
     Require all denied
 </IfModule>
@@ -5,3 +7,14 @@
     Order allow,deny
     Deny from all
 </IfModule>
+
+# Turn the PHP engine off when mod_php is loaded.
+# إيقاف محرك PHP عند تحميل الوحدة
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Do not execute uploaded PHP files.
+# عدم تنفيذ ملفات PHP المرفوعة
+RemoveHandler .php .phtml
+RemoveType .php .phtml
