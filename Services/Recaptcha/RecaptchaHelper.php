@@ -62,73 +62,10 @@ class RecaptchaHelper
 
         $html = '<div';
         foreach ($attributes as $key => $value) {
-            $html .= " {$key}=\"{$value}\"";
+            $html .= ' ' . $key . '="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '"';
         }
         $html .= '></div>';
 
         return $html;
-    }
-
-    public function renderV3($action, $formId)
-    {
-        return "
-<script>
-    grecaptcha.ready(function() {
-        document.getElementById('{$formId}').addEventListener('submit', function(e) {
-            e.preventDefault();
-            grecaptcha.execute('{$this->siteKey}', {action: '{$action}'}).then(function(token) {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'g-recaptcha-response';
-                input.value = token;
-                document.getElementById('{$formId}').appendChild(input);
-                document.getElementById('{$formId}').submit();
-            });
-        });
-    });
-</script>";
-    }
-
-    public function render($options = [])
-    {
-        $language = $options['language'] ?? null;
-        $html = $this->renderScript($language) . "\n";
-
-        if ($this->version === 'v3') {
-            $action = $options['action'] ?? 'submit';
-            $formId = $options['form_id'] ?? 'recaptcha-form';
-            $html .= $this->renderV3($action, $formId);
-        } else {
-            $html .= $this->renderV2($options);
-        }
-
-        return $html;
-    }
-
-    public function renderInvisible($buttonId, $options = [])
-    {
-        $callback = $options['callback'] ?? 'onSubmit';
-
-        $html = $this->renderScript($options['language'] ?? null) . "\n";
-        $html .= "<button id=\"{$buttonId}\" class=\"g-recaptcha\" data-sitekey=\"{$this->siteKey}\" data-callback=\"{$callback}\" data-size=\"invisible\">";
-        $html .= $options['button_text'] ?? 'Submit';
-        $html .= "</button>\n";
-        $html .= "<script>
-function {$callback}(token) {
-    document.getElementById('" . ($options['form_id'] ?? 'recaptcha-form') . "').submit();
-}
-</script>";
-
-        return $html;
-    }
-
-    public function getSiteKey()
-    {
-        return $this->siteKey;
-    }
-
-    public function getVersion()
-    {
-        return $this->version;
     }
 }

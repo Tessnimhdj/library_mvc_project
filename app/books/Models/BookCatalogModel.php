@@ -8,7 +8,7 @@ include_once __DIR__ . '/../../../Config/Database.php';
 
 class BookCatalogModel
 {
-    private $db;
+    private \PDO $db;
 
     public function __construct()
     {
@@ -17,19 +17,13 @@ class BookCatalogModel
 
     public function search(string $q, int $limit, int $offset): array
     {
-        $sql = 'SELECT id, inventory_number, title, author, notes
-            FROM books';
         $params = [];
-
-        if ($q !== '') {
-            $sql .= ' WHERE title LIKE :title_pattern ESCAPE \'\\\\\'
-                OR author LIKE :author_pattern ESCAPE \'\\\\\'
-                OR inventory_number LIKE :inventory_pattern ESCAPE \'\\\\\'';
-            $pattern = $this->likePattern($q);
-            $params[':title_pattern'] = $pattern;
-            $params[':author_pattern'] = $pattern;
-            $params[':inventory_pattern'] = $pattern;
-        }
+        $sql = $this->withSearchFilter(
+            'SELECT id, inventory_number, title, author, notes
+            FROM books',
+            $q,
+            $params
+        );
 
         $sql .= ' ORDER BY title ASC, id ASC
             LIMIT :limit OFFSET :offset';
@@ -47,18 +41,8 @@ class BookCatalogModel
 
     public function count(string $q): int
     {
-        $sql = 'SELECT COUNT(*) FROM books';
         $params = [];
-
-        if ($q !== '') {
-            $sql .= ' WHERE title LIKE :title_pattern ESCAPE \'\\\\\'
-                OR author LIKE :author_pattern ESCAPE \'\\\\\'
-                OR inventory_number LIKE :inventory_pattern ESCAPE \'\\\\\'';
-            $pattern = $this->likePattern($q);
-            $params[':title_pattern'] = $pattern;
-            $params[':author_pattern'] = $pattern;
-            $params[':inventory_pattern'] = $pattern;
-        }
+        $sql = $this->withSearchFilter('SELECT COUNT(*) FROM books', $q, $params);
 
         $statement = $this->db->prepare($sql);
         foreach ($params as $name => $value) {
@@ -82,6 +66,22 @@ class BookCatalogModel
         $row = $statement->fetch();
 
         return $row === false ? null : $row;
+    }
+
+    private function withSearchFilter(string $sql, string $q, array &$params): string
+    {
+        if ($q === '') {
+            return $sql;
+        }
+
+        $pattern = $this->likePattern($q);
+        $params[':title_pattern'] = $pattern;
+        $params[':author_pattern'] = $pattern;
+        $params[':inventory_pattern'] = $pattern;
+
+        return $sql . ' WHERE title LIKE :title_pattern ESCAPE \'\\\\\'
+            OR author LIKE :author_pattern ESCAPE \'\\\\\'
+            OR inventory_number LIKE :inventory_pattern ESCAPE \'\\\\\'';
     }
 
     private function likePattern(string $q): string

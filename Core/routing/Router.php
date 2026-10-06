@@ -12,7 +12,8 @@ class Router
         try {
             self::autoRoute($uri);
         } catch (\Throwable $e) {
-            self::show404($uri);
+            \Core\Log::error($e->getMessage());
+            \Core\View::renderError(500, 'Something went wrong. Please try again.');
         }
     }
 
@@ -46,7 +47,7 @@ class Router
         $uri = trim($uri, '/');
 
         if ($uri === '') {
-            $controllerSegment = 'Upload';
+            $controllerSegment = 'Book';
             $methodName = 'index';
         } else {
             $segments = explode('/', $uri);
@@ -189,55 +190,7 @@ class Router
 
     private static function show404(string $uri): void
     {
-        if (!headers_sent()) {
-            http_response_code(404);
-        }
-
-        echo "<!DOCTYPE html>
-<html lang='en'>
-<head>
-    <meta charset='UTF-8'>
-    <title>Page Not Found</title>
-    <style>
-        body {
-            background-color: #f2f2f2;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 100px;
-            color: #333;
-        }
-        .container {
-            background-color: #fff;
-            display: inline-block;
-            padding: 40px 60px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #e74c3c;
-        }
-        p {
-            font-size: 18px;
-        }
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <h1>404</h1>
-        <p>Page not found.</p>
-    </div>
-</body>
-</html>";
-
-        $logFile = __DIR__ . '/../logs/errors.log';
-        $directory = dirname($logFile);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        $logMessage = "[" . date('Y-m-d H:i:s') . "] 404 Error - Route not found: " . $uri;
-        file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND);
+        \Core\Log::error('404 Error - Route not found: ' . $uri);
+        \Core\View::renderError(404, 'Page not found.');
     }
 }

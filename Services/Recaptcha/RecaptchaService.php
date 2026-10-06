@@ -5,7 +5,6 @@ namespace Services\Recaptcha;
 class RecaptchaService
 {
     private $secretKey;
-    private $siteKey;
     private $verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
 
     public function __construct($config = null)
@@ -15,7 +14,6 @@ class RecaptchaService
         }
 
         $this->secretKey = $config['secret_key'];
-        $this->siteKey = $config['site_key'];
     }
 
     public function verify($response, $remoteIp = null)
@@ -78,37 +76,5 @@ class RecaptchaService
             'error' => 'reCAPTCHA verification failed',
             'error_codes' => $resultJson['error-codes'] ?? []
         ];
-    }
-
-    public function isValid($response, $remoteIp = null)
-    {
-        $result = $this->verify($response, $remoteIp);
-        return $result['success'] === true;
-    }
-
-    public function getSiteKey()
-    {
-        return $this->siteKey;
-    }
-
-    public function verifyWithScore($response, $minScore = 0.5, $remoteIp = null)
-    {
-        $result = $this->verify($response, $remoteIp);
-
-        if (!$result['success']) {
-            return $result;
-        }
-
-        $score = $result['score'] ?? 0;
-
-        if ($score < $minScore) {
-            return [
-                'success' => false,
-                'error' => 'Score is too low. The request may be from a bot',
-                'score' => $score
-            ];
-        }
-
-        return $result;
     }
 }

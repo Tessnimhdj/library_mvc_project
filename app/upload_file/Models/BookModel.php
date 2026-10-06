@@ -1,11 +1,14 @@
 <?php
 
 namespace app\upload_file\Models;
+
+use Core\Log;
 use Database;
 
 include_once __DIR__ . '/../../../Config/Database.php';
 
-class BookModel {
+class BookModel
+{
     private const CHUNK_SIZE = 500;
     private const FAILED_LIMIT = 50;
     private const MAX_INVENTORY_LENGTH = 64;
@@ -13,34 +16,11 @@ class BookModel {
     private const MAX_AUTHOR_LENGTH = 255;
     private const MAX_NOTES_BYTES = 65535;
 
-    private $db;
+    private \PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::connect();
-    }
-
-    public function beginTransaction() { return $this->db->beginTransaction(); }
-
-    public function commit() { return $this->db->commit(); }
-
-    public function rollBack() {
-        if ($this->db->inTransaction()) {
-            return $this->db->rollBack();
-        }
-
-        return false;
-    }
-
-    public function insertIfNotExists($inventory, $title, $author, $notes) {
-        $statement = $this->insertStatement();
-        $statement->execute([
-            ':inventory' => $inventory,
-            ':title' => $title,
-            ':author' => $author,
-            ':notes' => $notes,
-        ]);
-
-        return $statement->rowCount() === 1;
     }
 
     public function importRows(array $rows, int $firstExcelRow = 2): array
@@ -173,7 +153,7 @@ class BookModel {
                 $this->db->rollBack();
             }
 
-            error_log($e->getMessage());
+            Log::error($e->getMessage());
 
             foreach ($chunk as $item) {
                 $this->recordFailure($result, (int) $item['row'], 'could not save this row');

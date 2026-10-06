@@ -2,6 +2,7 @@
 
 namespace app\auth\Models;
 
+use Core\Log;
 use Database;
 
 include_once __DIR__ . '/../../../Config/Database.php';
@@ -10,7 +11,7 @@ class UserModel
 {
     private const DUMMY_HASH = '$2y$10$6qGUIVAzRdzguW0d6./Hc.e2bVPpUZ7DKis7ptD074BILKNjTH9ZO';
 
-    private $db;
+    private \PDO $db;
 
     public function __construct()
     {
@@ -89,7 +90,7 @@ class UserModel
 
     private function fail(\PDOException $e): never
     {
-        error_log($e->getMessage());
+        Log::error($e->getMessage());
         throw new \RuntimeException('The request could not be completed.');
     }
 }

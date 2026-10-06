@@ -3,16 +3,13 @@
 namespace app\upload_file\Controllers;
 
 use app\upload_file\Models\BookModel;
+use Core\Log;
+use Core\View;
 use Services\Recaptcha\RecaptchaHelper;
 use Services\Recaptcha\RecaptchaService;
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-require_once __DIR__ . '/../../../Config/Config.php';
-
-class UploadController {
+class UploadController
+{
     private const MAX_FILE_SIZE = 5 * 1024 * 1024;
     private const MAX_ROWS = 20000;
     private const READ_CHUNK = 1000;
@@ -23,103 +20,62 @@ class UploadController {
         'application/zip',
     ];
 
-    private $bookModel;
+    private BookModel $bookModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->bookModel = new BookModel();
     }
 
-    public function index() {
+    public function index(): void
+    {
         $successMsg = $_SESSION['success_msg'] ?? '';
         $errorMsg = $_SESSION['error_msg'] ?? '';
-        $import_report = $_SESSION['import_report'] ?? null;
+        $importReport = $_SESSION['import_report'] ?? null;
         unset($_SESSION['success_msg'], $_SESSION['error_msg'], $_SESSION['err_msg'], $_SESSION['import_report']);
 
         $helper = new RecaptchaHelper();
-        $recaptchaScript = $helper->renderScript('en');
-        $recaptchaWidget = $helper->renderV2();
-        $formAction = \Router::url('/upload/import');
-
-        include __DIR__ . '/../Views/upload.php';
+        View::render(__DIR__ . '/../Views/upload.php', [
+            'successMsg' => $successMsg,
+            'errorMsg' => $errorMsg,
+            'import_report' => $importReport,
+            'recaptchaScript' => $helper->renderScript('en'),
+            'recaptchaWidget' => $helper->renderV2(),
+        ], [
+            'nav' => 'upload',
+            'status' => 200,
+        ]);
     }
 
-    public function import() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit('Method Not Allowed');
+    public function import(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Allow: POST');
+            View::renderError(405, 'Method Not Allowed');
+            return;
         }
 
-        $redirectUrl = \Router::url('/');
+        require_once __DIR__ . '/../../../Config/Config.php';
 
-        $recaptchaService = new RecaptchaService();
-        $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
-        $recaptchaResult = $recaptchaService->verify($recaptchaToken, $_SERVER['REMOTE_ADDR'] ?? null);
+        $redirectUrl = \Router::url('/upload');
 
-        if (!$recaptchaResult['success']) {
-            $this->logError('reCAPTCHA rejected the request: ' . ($recaptchaResult['error'] ?? 'unknown'));
+        if (!$this->captchaAccepted()) {
             $this->redirectWithError($redirectUrl, 'Verification failed. Please complete the check.');
         }
 
-        if (!isset($_FILES['input_file']) || !is_array($_FILES['input_file'])) {
-            $this->logError('Upload missing input_file');
-            $this->redirectWithError($redirectUrl, 'Please select a file.');
-        }
-
-        $file = $_FILES['input_file'];
-        $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
-
-        if ($uploadError !== UPLOAD_ERR_OK) {
-            $this->logError('Upload error code: ' . $uploadError);
-            $this->redirectWithError($redirectUrl, $this->uploadErrorMessage($uploadError));
-        }
-
-        $tmpName = $file['tmp_name'] ?? '';
-        if (!is_string($tmpName) || !is_uploaded_file($tmpName)) {
-            $this->logError('Upload rejected because tmp_name is not an uploaded file');
-            $this->redirectWithError($redirectUrl, 'The file could not be uploaded.');
-        }
-
-        $size = (int) ($file['size'] ?? 0);
-        if ($size > self::MAX_FILE_SIZE) {
-            $this->logError('Upload rejected because the file exceeds 5 MB');
-            $this->redirectWithError($redirectUrl, 'The file is too large. The maximum size is 5 MB.');
-        }
-
-        $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
-        if ($extension !== 'xlsx') {
-            $this->logError('Upload rejected because the extension is not xlsx');
-            $this->redirectWithError($redirectUrl, 'This file type is not allowed. Use an xlsx Excel file.');
-        }
-
-        if (!$this->hasAllowedMimeType($tmpName)) {
-            $this->logError('Upload rejected because the MIME type is not an xlsx workbook');
-            $this->redirectWithError($redirectUrl, 'This file type is not allowed. Use an xlsx Excel file.');
-        }
-
+        $tmpName = $this->acceptedUpload($redirectUrl);
         $uploadPath = null;
 
         try {
             $uploadPath = UPLOAD_DIR . bin2hex(random_bytes(16)) . '.xlsx';
             if (!move_uploaded_file($tmpName, $uploadPath)) {
-                $this->logError('move_uploaded_file failed');
+                Log::error('move_uploaded_file failed');
                 $_SESSION['error_msg'] = 'The file could not be saved.';
             } else {
-                $report = $this->importWorkbook($uploadPath);
-                if ($report === null) {
-                    $_SESSION['error_msg'] = 'The file has too many rows.';
-                } elseif ($report['added'] === 0 && $report['skipped'] === 0 && $report['failed_count'] === 0) {
-                    $_SESSION['error_msg'] = 'The file has no rows to import.';
-                } else {
-                    $message = "Import complete: {$report['added']} added, {$report['skipped']} skipped.";
-                    if ($report['failed_count'] > 0) {
-                        $message .= ", {$report['failed_count']} failed";
-                    }
-                    $_SESSION['success_msg'] = $message;
-                    $_SESSION['import_report'] = $report;
-                }
+                $this->storeImportResult($this->importWorkbook($uploadPath));
             }
         } catch (\Throwable $e) {
-            $this->logError('Import error: ' . $e->getMessage());
+            Log::error('Import error: ' . $e->getMessage());
             $_SESSION['error_msg'] = 'The Excel file could not be read or the data could not be saved.';
         } finally {
             if (is_string($uploadPath) && is_file($uploadPath)) {
@@ -131,6 +87,84 @@ class UploadController {
         exit;
     }
 
+    private function captchaAccepted(): bool
+    {
+        $result = (new RecaptchaService())->verify(
+            $_POST['g-recaptcha-response'] ?? '',
+            $_SERVER['REMOTE_ADDR'] ?? null
+        );
+
+        if (!empty($result['success'])) {
+            return true;
+        }
+
+        Log::error('reCAPTCHA rejected the request: ' . ($result['error'] ?? 'unknown'));
+
+        return false;
+    }
+
+    private function acceptedUpload(string $redirectUrl): string
+    {
+        if (!isset($_FILES['input_file']) || !is_array($_FILES['input_file'])) {
+            Log::error('Upload missing input_file');
+            $this->redirectWithError($redirectUrl, 'Please select a file.');
+        }
+
+        $file = $_FILES['input_file'];
+        $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            Log::error('Upload error code: ' . $uploadError);
+            $this->redirectWithError($redirectUrl, $this->uploadErrorMessage($uploadError));
+        }
+
+        $tmpName = $file['tmp_name'] ?? '';
+        if (!is_string($tmpName) || !is_uploaded_file($tmpName)) {
+            Log::error('Upload rejected because tmp_name is not an uploaded file');
+            $this->redirectWithError($redirectUrl, 'The file could not be uploaded.');
+        }
+
+        $size = (int) ($file['size'] ?? 0);
+        if ($size > self::MAX_FILE_SIZE) {
+            Log::error('Upload rejected because the file exceeds 5 MB');
+            $this->redirectWithError($redirectUrl, 'The file is too large. The maximum size is 5 MB.');
+        }
+
+        $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+        if ($extension !== 'xlsx') {
+            Log::error('Upload rejected because the extension is not xlsx');
+            $this->redirectWithError($redirectUrl, 'This file type is not allowed. Use an xlsx Excel file.');
+        }
+
+        if (!$this->hasAllowedMimeType($tmpName)) {
+            Log::error('Upload rejected because the MIME type is not an xlsx workbook');
+            $this->redirectWithError($redirectUrl, 'This file type is not allowed. Use an xlsx Excel file.');
+        }
+
+        return $tmpName;
+    }
+
+    private function storeImportResult(?array $report): void
+    {
+        if ($report === null) {
+            $_SESSION['error_msg'] = 'The file has too many rows.';
+            return;
+        }
+
+        if ($report['added'] === 0 && $report['skipped'] === 0 && $report['failed_count'] === 0) {
+            $_SESSION['error_msg'] = 'The file has no rows to import.';
+            return;
+        }
+
+        $message = "Import complete: {$report['added']} added, {$report['skipped']} skipped.";
+        if ($report['failed_count'] > 0) {
+            $message .= ", {$report['failed_count']} failed";
+        }
+
+        $_SESSION['success_msg'] = $message;
+        $_SESSION['import_report'] = $report;
+    }
+
     private function importWorkbook(string $path): ?array
     {
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
@@ -139,7 +173,7 @@ class UploadController {
         $totalRows = (int) ($worksheetInfo[0]['totalRows'] ?? 0);
 
         if ($totalRows > self::MAX_ROWS) {
-            $this->logError('Import rejected because the worksheet has too many rows');
+            Log::error('Import rejected because the worksheet has too many rows');
             return null;
         }
 
@@ -224,24 +258,7 @@ class UploadController {
         return is_string($mime) && in_array($mime, self::ALLOWED_MIME_TYPES, true);
     }
 
-    private function logError(string $message): void
-    {
-        error_log($message);
-
-        $logFile = __DIR__ . '/../../../Core/logs/errors.log';
-        $directory = dirname($logFile);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        file_put_contents(
-            $logFile,
-            '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL,
-            FILE_APPEND
-        );
-    }
-
-    private function redirectWithError(string $redirectUrl, string $message): void
+    private function redirectWithError(string $redirectUrl, string $message): never
     {
         $_SESSION['error_msg'] = $message;
         header('Location: ' . $redirectUrl);
