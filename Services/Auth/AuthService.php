@@ -2,20 +2,13 @@
 
 namespace Services\Auth;
 
-/**
- * Stores the staff session. This service does not render pages.
- */
 class AuthService
 {
     private const IDLE_TIMEOUT = 1800;
     private const MAX_LIFETIME = 28800;
 
-    /**
-     * Starts the staff session once, with a fixed cookie name and flags.
-     */
     public static function startSession(): void
     {
-        // لا تعِد تشغيل جلسة قائمة
         if (session_status() === PHP_SESSION_ACTIVE) {
             return;
         }
@@ -36,12 +29,8 @@ class AuthService
         session_start();
     }
 
-    /**
-     * Stores the logged-in staff member and rotates the session id.
-     */
     public static function login(int $userId, string $username, string $role): void
     {
-        // تثبيت الجلسة ثم حفظ بيانات الدخول
         self::startSession();
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
@@ -51,12 +40,8 @@ class AuthService
         $_SESSION['last_activity'] = time();
     }
 
-    /**
-     * Returns true when the session is present and still inside both time limits.
-     */
     public static function check(): bool
     {
-        // رفض الجلسة المنتهية وتحديث النشاط عند النجاح
         self::startSession();
 
         $userId = $_SESSION['user_id'] ?? null;
@@ -77,11 +62,6 @@ class AuthService
         return true;
     }
 
-    /**
-     * Returns the logged-in staff member, or null when the session is not valid.
-     *
-     * @return array{id: int, username: string, role: string}|null
-     */
     public static function user(): ?array
     {
         if (!self::check()) {
@@ -95,12 +75,8 @@ class AuthService
         ];
     }
 
-    /**
-     * Clears the staff session and expires its cookie.
-     */
     public static function logout(): void
     {
-        // مسح بيانات الجلسة وإنهاء ملف تعريف الارتباط
         self::startSession();
         $_SESSION = [];
 
@@ -119,12 +95,8 @@ class AuthService
         session_destroy();
     }
 
-    /**
-     * Sends guests to the login page. The target is fixed and never read from the request.
-     */
     public static function requireLogin(): void
     {
-        // إعادة الزائر إلى صفحة الدخول، ومنع تخزين الصفحات المحمية
         if (!self::check()) {
             header('Location: ' . \Router::url('/auth'), true, 302);
             exit;
@@ -134,9 +106,6 @@ class AuthService
         header('Pragma: no-cache');
     }
 
-    /**
-     * Uses the application base path as the session cookie path.
-     */
     private static function cookiePath(): string
     {
         if (class_exists('Router', false)) {

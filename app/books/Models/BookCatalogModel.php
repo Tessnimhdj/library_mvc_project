@@ -6,29 +6,17 @@ use Database;
 
 include_once __DIR__ . '/../../../Config/Database.php';
 
-/**
- * Reads books for the public catalog. This model does not write to the database.
- */
 class BookCatalogModel
 {
     private $db;
 
-    /**
-     * Opens the shared PDO connection.
-     */
     public function __construct()
     {
         $this->db = Database::connect();
     }
 
-    /**
-     * Returns one page of books, optionally filtered by title, author, or inventory number.
-     *
-     * @return array<int, array<string, mixed>>
-     */
     public function search(string $q, int $limit, int $offset): array
     {
-        // بناء الاستعلام مع نمط واحد للبحث
         $sql = 'SELECT id, inventory_number, title, author, notes
             FROM books';
         $params = [];
@@ -57,12 +45,8 @@ class BookCatalogModel
         return $statement->fetchAll();
     }
 
-    /**
-     * Counts books that match the same filter as search().
-     */
     public function count(string $q): int
     {
-        // عد الصفوف بنفس شرط البحث
         $sql = 'SELECT COUNT(*) FROM books';
         $params = [];
 
@@ -85,12 +69,8 @@ class BookCatalogModel
         return (int) $statement->fetchColumn();
     }
 
-    /**
-     * Returns one book by its id, or null when no row matches.
-     */
     public function find(int $id): ?array
     {
-        // جلب كتاب واحد بالمعرف
         $statement = $this->db->prepare(
             'SELECT id, inventory_number, title, author, notes
             FROM books
@@ -104,9 +84,6 @@ class BookCatalogModel
         return $row === false ? null : $row;
     }
 
-    /**
-     * Builds one LIKE pattern and escapes backslash, percent, and underscore.
-     */
     private function likePattern(string $q): string
     {
         $escaped = str_replace('\\', '\\\\', $q);

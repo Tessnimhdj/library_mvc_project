@@ -1,15 +1,9 @@
 <?php
 
-/**
- * Maps a request URI to one public controller action under app/.
- */
 class Router
 {
     private static ?string $basePath = null;
 
-    /**
-     * Normalizes the request URI and dispatches it.
-     */
     public static function dispatch()
     {
         self::$basePath = self::detectBasePath();
@@ -22,9 +16,6 @@ class Router
         }
     }
 
-    /**
-     * Returns the application base path.
-     */
     public static function basePath(): string
     {
         if (self::$basePath === null) {
@@ -34,9 +25,6 @@ class Router
         return self::$basePath;
     }
 
-    /**
-     * Builds an absolute path from the application base path.
-     */
     public static function url(string $path = '/'): string
     {
         $base = self::basePath();
@@ -47,18 +35,12 @@ class Router
         return ($base === '' ? '' : $base) . '/' . ltrim($path, '/');
     }
 
-    /**
-     * Reads the directory that contains the front controller.
-     */
     private static function detectBasePath(): string
     {
         $basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
         return rtrim($basePath, '/');
     }
 
-    /**
-     * Resolves the controller and action. The home URI calls UploadController::index.
-     */
     private static function autoRoute(string $uri): void
     {
         $uri = trim($uri, '/');
@@ -121,17 +103,11 @@ class Router
         $controller->$methodName();
     }
 
-    /**
-     * Accepts a segment that starts with a letter and then uses only letters, digits, or underscores.
-     */
     private static function isValidSegment(string $segment): bool
     {
         return preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $segment) === 1;
     }
 
-    /**
-     * Finds a controller file under app/{feature}/Controllers and rejects paths outside app/.
-     */
     private static function findController(string $controllerName): ?array
     {
         $projectRoot = realpath(__DIR__ . '/../..');
@@ -174,9 +150,6 @@ class Router
         return null;
     }
 
-    /**
-     * Allows a public instance method declared on the controller class itself.
-     */
     private static function isRoutableMethod(object $controller, string $methodName): bool
     {
         if (!self::isValidSegment($methodName) || str_starts_with($methodName, '__')) {
@@ -196,9 +169,6 @@ class Router
             && $method->getDeclaringClass()->getName() === get_class($controller);
     }
 
-    /**
-     * Removes the application base path and the query string from the request URI.
-     */
     private static function normalizeUri($uri)
     {
         if (self::$basePath !== '' && str_starts_with($uri, self::$basePath)) {
@@ -217,9 +187,6 @@ class Router
         return rtrim($path, '/') ?: '/';
     }
 
-    /**
-     * Sends a generic 404 response and records the URI without internal details.
-     */
     private static function show404(string $uri): void
     {
         if (!headers_sent()) {

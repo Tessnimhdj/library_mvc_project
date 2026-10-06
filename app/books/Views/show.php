@@ -1,7 +1,4 @@
 <?php
-/**
- * Book detail. Renders one book, or a not-found state when book is null.
- */
 $listParams = [];
 if ($q !== '') {
     $listParams['q'] = $q;
@@ -41,10 +38,8 @@ if ($listParams !== []) {
                 <?= htmlspecialchars($error_msg, ENT_QUOTES, 'UTF-8'); ?>
             </div>
         <?php elseif (!is_array($book)): ?>
-            <?php // حالة الكتاب غير الموجود ?>
             <h1>Book not found.</h1>
         <?php else: ?>
-            <?php // بيانات الكتاب ?>
             <h1><?= htmlspecialchars((string) ($book['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></h1>
             <dl>
                 <dt>Inventory no.</dt>
@@ -68,7 +63,6 @@ if ($listParams !== []) {
             </dl>
         <?php endif; ?>
 
-        <?php // العودة إلى القائمة ?>
         <p><a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8'); ?>">Back to list</a></p>
     </div>
 </body>

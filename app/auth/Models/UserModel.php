@@ -6,30 +6,20 @@ use Database;
 
 include_once __DIR__ . '/../../../Config/Database.php';
 
-/**
- * Reads staff accounts and checks passwords. This model does not register users.
- */
 class UserModel
 {
     private const DUMMY_HASH = '$2y$10$6qGUIVAzRdzguW0d6./Hc.e2bVPpUZ7DKis7ptD074BILKNjTH9ZO';
 
     private $db;
 
-    /**
-     * Opens the shared PDO connection.
-     */
     public function __construct()
     {
         $this->db = Database::connect();
     }
 
-    /**
-     * Returns the user row for a username, including the password hash, or null.
-     */
     public function findByUsername(string $username): ?array
     {
         try {
-            // البحث عن المستخدم باسم الدخول
             $statement = $this->db->prepare(
                 'SELECT id, username, password_hash, role, is_active, last_login_at, created_at
                 FROM users
@@ -46,13 +36,9 @@ class UserModel
         }
     }
 
-    /**
-     * Returns the user without the password hash when the password matches an active account.
-     */
     public function verifyCredentials(string $username, string $password): ?array
     {
         try {
-            // التحقق من كلمة المرور حتى عندما لا يوجد المستخدم
             $row = $this->findByUsername($username);
             if ($row === null) {
                 password_verify($password, self::DUMMY_HASH);
@@ -78,13 +64,9 @@ class UserModel
         }
     }
 
-    /**
-     * Records the current time as the user's last successful login.
-     */
     public function touchLastLogin(int $id): void
     {
         try {
-            // تحديث وقت آخر دخول
             $statement = $this->db->prepare(
                 'UPDATE users SET last_login_at = NOW() WHERE id = :id'
             );
@@ -95,9 +77,6 @@ class UserModel
         }
     }
 
-    /**
-     * Replaces the stored password hash after a successful verification.
-     */
     private function updatePasswordHash(int $id, string $hash): void
     {
         $statement = $this->db->prepare(
@@ -108,9 +87,6 @@ class UserModel
         $statement->execute();
     }
 
-    /**
-     * Logs the database error and throws a message that contains no SQL.
-     */
     private function fail(\PDOException $e): never
     {
         error_log($e->getMessage());

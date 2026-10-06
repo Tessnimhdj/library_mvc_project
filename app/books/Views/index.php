@@ -1,7 +1,4 @@
 <?php
-/**
- * Public book list. Renders books, q, page, total_pages, and total from the controller.
- */
 $listUrl = \Router::url('/book');
 
 $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
@@ -46,7 +43,6 @@ $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
             </div>
         <?php endif; ?>
 
-        <?php // نموذج البحث ?>
         <form action="<?= htmlspecialchars($listUrl, ENT_QUOTES, 'UTF-8'); ?>" method="get">
             <input type="search" name="q" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8'); ?>">
             <button type="submit">Search</button>
@@ -55,7 +51,6 @@ $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
             <?php endif; ?>
         </form>
 
-        <?php // عدد النتائج ?>
         <?php if ($error_msg === ''): ?>
         <p>
             <?php if ($q !== ''): ?>
@@ -71,7 +66,6 @@ $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
             <p>No books found.</p>
             <p>Change the search and try again.</p>
         <?php elseif ($error_msg === ''): ?>
-            <?php // جدول الكتب ?>
             <table>
                 <thead>
                     <tr>
@@ -104,7 +98,6 @@ $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
             </table>
         <?php endif; ?>
 
-        <?php // ترقيم الصفحات ?>
         <?php if ((int) $total_pages > 1): ?>
             <?php
             $pageNumbers = [1, (int) $total_pages];

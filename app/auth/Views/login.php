@@ -1,8 +1,3 @@
-<?php
-/**
- * Staff login form. Renders errorMsg, formAction, and the reCAPTCHA markup.
- */
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -24,7 +19,6 @@
             </div>
         <?php endif; ?>
 
-        <?php // نموذج الدخول ?>
         <form action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>

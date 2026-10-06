@@ -1,8 +1,3 @@
-<?php
-/**
- * Upload form. Renders import_report when the controller provides one.
- */
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,7 +25,6 @@
             </div>
         <?php endif; ?>
 
-        <?php // تقرير نتيجة الاستيراد ?>
         <?php if (isset($import_report) && is_array($import_report)): ?>
             <?php
             $addedCount = (int) ($import_report['added'] ?? 0);

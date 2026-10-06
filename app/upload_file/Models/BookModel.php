@@ -15,26 +15,14 @@ class BookModel {
 
     private $db;
 
-    /**
-     * Opens the shared PDO connection.
-     */
     public function __construct() {
         $this->db = Database::connect();
     }
 
-    /**
-     * Starts a PDO transaction.
-     */
     public function beginTransaction() { return $this->db->beginTransaction(); }
 
-    /**
-     * Commits the current PDO transaction.
-     */
     public function commit() { return $this->db->commit(); }
 
-    /**
-     * Rolls back the current PDO transaction when one is open.
-     */
     public function rollBack() {
         if ($this->db->inTransaction()) {
             return $this->db->rollBack();
@@ -43,10 +31,6 @@ class BookModel {
         return false;
     }
 
-    /**
-     * Inserts one book or reports an existing inventory number.
-     * Returns true when the row is new and false when it already exists.
-     */
     public function insertIfNotExists($inventory, $title, $author, $notes) {
         $statement = $this->insertStatement();
         $statement->execute([
@@ -59,13 +43,6 @@ class BookModel {
         return $statement->rowCount() === 1;
     }
 
-    /**
-     * Imports rows in chunks and returns added, skipped, and failed counts.
-     * $rows contains data rows only. $firstExcelRow is the worksheet number of the first data row.
-     * This method starts its own transactions and must not be called inside an open transaction.
-     *
-     * @return array{added: int, skipped: int, failed: array<int, array{row: int, reason: string}>, failed_count: int}
-     */
     public function importRows(array $rows, int $firstExcelRow = 2): array
     {
         $result = [
@@ -75,7 +52,6 @@ class BookModel {
             'failed_count' => 0,
         ];
 
-        // التحقق من الصفوف قبل الإدخال
         $pending = [];
         foreach ($rows as $offset => $row) {
             $excelRow = $firstExcelRow + (int) $offset;
@@ -95,10 +71,8 @@ class BookModel {
             return $result;
         }
 
-        // تجهيز جملة واحدة تعاد لكل الصفوف
         $statement = $this->insertStatement();
 
-        // إدخال كل 500 صف في معاملة مستقلة
         foreach (array_chunk($pending, self::CHUNK_SIZE) as $chunk) {
             $this->insertChunk($statement, $chunk, $result);
         }
@@ -106,11 +80,6 @@ class BookModel {
         return $result;
     }
 
-    /**
-     * Trims a row and rejects missing or oversized values.
-     *
-     * @return array{reason: ?string, data: array{inventory: string, title: string, author: string, notes: string}}
-     */
     private function validateRow($row): array
     {
         $empty = [
@@ -164,9 +133,6 @@ class BookModel {
         ];
     }
 
-    /**
-     * Prepares the no-op duplicate insert once.
-     */
     private function insertStatement(): \PDOStatement
     {
         return $this->db->prepare(
@@ -176,9 +142,6 @@ class BookModel {
         );
     }
 
-    /**
-     * Inserts one chunk and classifies each row from the affected-row count.
-     */
     private function insertChunk(\PDOStatement $statement, array $chunk, array &$result): void
     {
         $added = 0;
@@ -195,7 +158,6 @@ class BookModel {
                     ':notes' => $item['data']['notes'],
                 ]);
 
-                // 1 صف جديد، و0 صف مكرر لم يتغير
                 if ($statement->rowCount() === 1) {
                     $added++;
                 } else {
@@ -219,9 +181,6 @@ class BookModel {
         }
     }
 
-    /**
-     * Records a failed row without returning more than the first 50 details.
-     */
     private function recordFailure(array &$result, int $row, string $reason): void
     {
         $result['failed_count']++;
