@@ -1,18 +1,16 @@
 <?php
 
 namespace app\upload_file\Controllers;
-use app\upload_file\Models\BookModel;
 
+use app\upload_file\Models\BookModel;
+use Services\Recaptcha\RecaptchaHelper;
+use Services\Recaptcha\RecaptchaService;
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-
-include_once __DIR__ . '/../Models/BookModel.php';
-require_once __DIR__ . '/../../../vendor/autoload.php';     
-require_once __DIR__ . '/../../../config/Config.php';        
-
+require_once __DIR__ . '/../../../Config/Config.php';
 
 class UploadController {
     private $bookModel;
@@ -22,74 +20,196 @@ class UploadController {
     }
 
     public function index() {
-        $msg = $_SESSION['err_msg'] ?? '';
-        unset($_SESSION['err_msg']);
+        $successMsg = $_SESSION['success_msg'] ?? '';
+        $errorMsg = $_SESSION['error_msg'] ?? '';
+        unset($_SESSION['success_msg'], $_SESSION['error_msg'], $_SESSION['err_msg']);
+
+        $helper = new RecaptchaHelper();
+        $recaptchaScript = $helper->renderScript('en');
+        $recaptchaWidget = $helper->renderV2();
+        $formAction = \Router::url('/upload/import');
+
         include __DIR__ . '/../Views/upload.php';
     }
 
     public function import() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405); exit("Method Not Allowed");
+            http_response_code(405);
+            exit('Method Not Allowed');
         }
 
-        // احصل على المسار الأساسي للمشروع
-        $basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-        $redirectUrl = $basePath . '/';
+        $redirectUrl = \Router::url('/');
 
-        if (!isset($_FILES['input_file']) || $_FILES['input_file']['name'] === '') {
-            $_SESSION['err_msg'] = "Please select a file.";
-            header("Location: $redirectUrl"); 
-            exit;
+        $recaptchaService = new RecaptchaService();
+        $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
+        $recaptchaResult = $recaptchaService->verify($recaptchaToken, $_SERVER['REMOTE_ADDR'] ?? null);
+
+        if (!$recaptchaResult['success']) {
+            $this->redirectWithError($redirectUrl, 'Verification failed: ' . ($recaptchaResult['error'] ?? 'Please complete the check'));
+        }
+
+        if (!isset($_FILES['input_file']) || !is_array($_FILES['input_file'])) {
+            $this->redirectWithError($redirectUrl, 'Please select a file.');
         }
 
         $file = $_FILES['input_file'];
+        $uploadError = $file['error'] ?? UPLOAD_ERR_NO_FILE;
 
-        if (!in_array($file['type'], ALLOWED_MIMES)) {
-            $_SESSION['err_msg'] = "Invalid file type.";
-            header("Location: $redirectUrl"); 
-            exit;
+        if ($uploadError === UPLOAD_ERR_NO_FILE || ($file['name'] ?? '') === '') {
+            $this->redirectWithError($redirectUrl, 'Please select a file.');
         }
 
-        if ($file['size'] > MAX_UPLOAD_BYTES) {
-            $_SESSION['err_msg'] = "File too large. Max 5MB.";
-            header("Location: $redirectUrl"); 
-            exit;
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            $this->redirectWithError($redirectUrl, 'The file could not be uploaded.');
         }
 
-        $upload_path = UPLOAD_DIR . time() . '_' . basename($file['name']);
-        if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-            $_SESSION['err_msg'] = "Failed to upload file.";
-            header("Location: $redirectUrl"); 
-            exit;
+        if (($file['size'] ?? 0) > MAX_UPLOAD_BYTES) {
+            $this->redirectWithError($redirectUrl, 'The file is too large. The maximum size is 5 MB.');
         }
 
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        $extension = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        if (!$this->isAllowedSpreadsheet((string) $file['tmp_name'], $extension)) {
+            $this->redirectWithError($redirectUrl, 'This file type is not allowed. Use an xlsx or xls Excel file.');
+        }
+
+        $uploadPath = UPLOAD_DIR . bin2hex(random_bytes(16)) . '.' . $extension;
+        if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            $this->redirectWithError($redirectUrl, 'The file could not be saved.');
+        }
+
         try {
-            $spreadsheet = $reader->load($upload_path);
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($uploadPath);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($uploadPath);
             $rows = $spreadsheet->getActiveSheet()->toArray();
             array_shift($rows);
 
-            $this->bookModel->beginTransaction();
-            foreach ($rows as $row) {
-                $inventory = trim($row[0] ?? '');
-                if ($inventory === '') continue;
+            $added = 0;
+            $skipped = 0;
 
-                $this->bookModel->insertIfNotExists(
-                    $inventory,
-                    trim($row[1] ?? ''),
-                    trim($row[2] ?? ''),
-                    trim($row[3] ?? '')
-                );
+            $this->bookModel->beginTransaction();
+            try {
+                foreach ($rows as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+
+                    $inventory = trim((string) ($row[0] ?? ''));
+                    $title = trim((string) ($row[1] ?? ''));
+                    $author = trim((string) ($row[2] ?? ''));
+                    $notes = trim((string) ($row[3] ?? ''));
+
+                    if ($inventory === '' && $title === '' && $author === '' && $notes === '') {
+                        continue;
+                    }
+
+                    if ($inventory === '') {
+                        $skipped++;
+                        continue;
+                    }
+
+                    if ($this->bookModel->insertIfNotExists($inventory, $title, $author, $notes)) {
+                        $added++;
+                    } else {
+                        $skipped++;
+                    }
+                }
+
+                $this->bookModel->commit();
+            } catch (\Throwable $e) {
+                $this->bookModel->rollBack();
+                throw $e;
             }
-            $this->bookModel->commit();
-            $_SESSION['err_msg'] = "Data imported successfully!";
-        } catch (\Exception $e) {
-            $this->bookModel->rollBack();
-            error_log($e->getMessage());
-            $_SESSION['err_msg'] = "Error reading Excel file.";
-        } 
-        
-        header("Location: $redirectUrl"); 
+
+            if ($added === 0 && $skipped === 0) {
+                $_SESSION['error_msg'] = 'The file has no rows to import.';
+            } else {
+                $_SESSION['success_msg'] = "Import complete: {$added} added, {$skipped} skipped.";
+            }
+        } catch (\Throwable $e) {
+            $this->logError('Import error: ' . $e->getMessage());
+            $_SESSION['error_msg'] = 'The Excel file could not be read or the data could not be saved.';
+        } finally {
+            if (is_file($uploadPath)) {
+                unlink($uploadPath);
+            }
+        }
+
+        header('Location: ' . $redirectUrl);
         exit;
+    }
+
+    private function redirectWithError(string $redirectUrl, string $message): void
+    {
+        $_SESSION['error_msg'] = $message;
+        header('Location: ' . $redirectUrl);
+        exit;
+    }
+
+    private function isAllowedSpreadsheet(string $tmpPath, string $extension): bool
+    {
+        if (!in_array($extension, ['xlsx', 'xls'], true) || !is_file($tmpPath)) {
+            return false;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($tmpPath);
+        if ($mime === false) {
+            return false;
+        }
+
+        if ($extension === 'xlsx') {
+            $allowedMimes = [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/zip',
+                'application/x-zip-compressed',
+            ];
+            if (!in_array($mime, $allowedMimes, true)) {
+                return false;
+            }
+
+            if (!class_exists(\ZipArchive::class)) {
+                return $mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            }
+
+            $zip = new \ZipArchive();
+            if ($zip->open($tmpPath) !== true) {
+                return false;
+            }
+            $isWorkbook = $zip->locateName('xl/workbook.xml') !== false;
+            $zip->close();
+
+            return $isWorkbook;
+        }
+
+        $allowedXlsMimes = [
+            'application/vnd.ms-excel',
+            'application/x-ole-storage',
+            'application/vnd.ms-office',
+        ];
+        if (!in_array($mime, $allowedXlsMimes, true)) {
+            return false;
+        }
+
+        $header = file_get_contents($tmpPath, false, null, 0, 8);
+
+        return $header !== false && str_starts_with($header, "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1");
+    }
+
+    private function logError(string $message): void
+    {
+        error_log($message);
+
+        $logFile = __DIR__ . '/../../../Core/logs/errors.log';
+        $directory = dirname($logFile);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        file_put_contents(
+            $logFile,
+            '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL,
+            FILE_APPEND
+        );
     }
 }

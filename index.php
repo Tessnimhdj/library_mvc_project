@@ -1,16 +1,14 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/Core/Env.php';
+Env::load(__DIR__ . DIRECTORY_SEPARATOR . '.env');
 
-
-// تحميل Composer إن وجد
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
 }
 
-// تحميل الراوتر وملف المسارات
 require_once __DIR__ . '/Core/routing/Router.php';
-require_once __DIR__ . '/Core/routing/Routes.php';
 
 
 spl_autoload_register(function($class){

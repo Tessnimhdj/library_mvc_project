@@ -1,0 +1,109 @@
+[2025-11-30 11:06:41] 404 Error - Route not found: jndhjghjgh | Details: Controller not found: JndhjghjghController in any app folder
+[2025-11-30 11:28:14] 404 Error - Route not found: Test/showMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:28:25] 404 Error - Route not found: test/showMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:30:18] 404 Error - Route not found: testMessage | Details: Controller not found: TestMessageController in any app folder
+[2025-11-30 11:31:06] 404 Error - Route not found: Test/testMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:31:09] 404 Error - Route not found: Test/testMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:31:17] 404 Error - Route not found: Test/testMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:32:43] 404 Error - Route not found: test/testMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:35:23] 404 Error - Route not found: test/testMessage | Details: Controller not found: TestController in any app folder
+[2025-11-30 11:38:44] 404 Error - Route not found: test/testMessage | Details: Controller class not found: app\upload_file\Controllers\TestController
+[2025-11-30 11:39:31] 404 Error - Route not found: test/testMessage | Details: Controller class not found: app\upload_file\Controllers\TestController
+[2025-11-30 12:02:59] 404 Error - Route not found: product | Details: Controller not found: ProductController in any app folder
+[2025-11-30 22:06:37] 404 Error - Route not found: mes_projet/product_mvc_project/product/create | Details: Controller not found: Mes_projetController in any app folder
+[2025-11-30 22:06:41] 404 Error - Route not found: mes_projet/product_mvc_project/product/create | Details: Controller not found: Mes_projetController in any app folder
+[2025-11-30 22:07:11] 404 Error - Route not found: mes_projet/product_mvc_project/product/store | Details: Controller not found: Mes_projetController in any app folder
+[2025-11-30 22:07:15] 404 Error - Route not found: mes_projet/product_mvc_project/product/store | Details: Controller not found: Mes_projetController in any app folder
+[2025-12-01 15:33:46] 404 Error - Route not found: mes_projet/portfolio/home/index | Details: Controller not found: Mes_projetController in any app folder
+[2025-12-01 15:36:20] 404 Error - Route not found: mes_projet/portfolio/home/index | Details: Controller not found: Mes_projetController in any app folder
+[2025-12-01 15:36:23] 404 Error - Route not found: mes_projet/portfolio/home/index | Details: Controller not found: Mes_projetController in any app folder
+[2025-12-01 15:38:07] 404 Error - Route not found: mes_projet/portfolio/home/index | Details: Controller not found: Mes_projetController in any app folder
+[2025-12-02 16:03:33] 404 Error - Route not found: public/index.php | Details: Controller not found: PublicController in any app folder
+[2025-12-13 21:46:22] 404 Error - Route not found: test/testMessage | Details: Method 'testMessage' not found in app\Test\Controllers\TestController
+[2025-12-13 22:08:04] Searching for RecaptchtestControllerController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/RecaptchtestControllerController.php
+
+[2025-12-13 22:08:04] 404 Error - Route not found: RecaptchtestController | Details: Controller not found: RecaptchtestControllerController in app or services folders
+[2025-12-13 22:08:12] Searching for RecaptchtestController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/RecaptchtestController.php
+
+[2025-12-13 22:08:12] 404 Error - Route not found: Recaptchtest | Details: Controller not found: RecaptchtestController in app or services folders
+[2025-12-13 22:08:14] Searching for RecaptchtestController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/RecaptchtestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/RecaptchtestController.php
+
+[2025-12-13 22:08:14] 404 Error - Route not found: Recaptchtest | Details: Controller not found: RecaptchtestController in app or services folders
+[2025-12-13 22:09:19] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:09:22] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:09:24] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:09:25] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:09:36] Searching for RecaptchtestControllerController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/RecaptchtestControllerController.php
+
+[2025-12-13 22:09:36] 404 Error - Route not found: RecaptchtestController | Details: Controller not found: RecaptchtestControllerController in app or services folders
+[2025-12-13 22:09:42] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:10:18] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:10:19] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:10:22] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:11:23] Searching for RecaptchtestControllerController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/RecaptchtestControllerController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/RecaptchtestControllerController.php
+
+[2025-12-13 22:11:23] 404 Error - Route not found: RecaptchtestController | Details: Controller not found: RecaptchtestControllerController in app or services folders
+[2025-12-13 22:11:33] 404 Error - Route not found: Recaptchtest/index | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:11:39] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:14:28] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-13 22:14:31] 404 Error - Route not found: Recaptchtest | Details: Controller class not found: app\Test\Controllers\RecaptchtestController
+[2025-12-14 09:45:45] Searching for PublicController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/PublicController.php
+
+[2025-12-14 09:45:45] 404 Error - Route not found: public/index.php | Details: Controller not found: PublicController in app or services folders
+[2026-01-19 07:37:00] Searching for PublicController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Test/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Recaptcha/Controllers/PublicController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/services/Controllers/PublicController.php
+
+[2026-01-19 07:37:00] 404 Error - Route not found: public/index.php | Details: Controller not found: PublicController in app or services folders
+[2026-10-06 00:54:01] 404 Error - Route not found: /
+[2026-10-06 00:54:01] 404 Error - Route not found: /test
+[2026-10-06 00:54:01] 404 Error - Route not found: /recaptchtest
+[2026-10-06 00:58:53] 404 Error - Route not found: upload/logError | Details: Method 'logError' not found in app\upload_file\Controllers\UploadController
+[2026-10-06 00:58:53] Searching for TestController in:
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/upload_file/Controllers/TestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/app/Controllers/TestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/Services/TestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/Services/Recaptcha/Controllers/TestController.php
+  - [NOT FOUND] C:\xampp\htdocs\mes_projet\library_mvc_project/Services/Controllers/TestController.php
+
+[2026-10-06 00:58:53] 404 Error - Route not found: test | Details: Controller not found: TestController

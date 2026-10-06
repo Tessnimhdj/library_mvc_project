@@ -1,0 +1,4 @@
+.env
+Public/Uploads/*
+!Public/Uploads/.gitkeep
+!Public/Uploads/.htaccess
