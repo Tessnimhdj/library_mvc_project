@@ -29,7 +29,7 @@ class BookCatalogModel
     public function search(string $q, int $limit, int $offset): array
     {
         // بناء الاستعلام مع نمط واحد للبحث
-        $sql = 'SELECT inventory_number, title, author, notes
+        $sql = 'SELECT id, inventory_number, title, author, notes
             FROM books';
         $params = [];
 
@@ -83,6 +83,25 @@ class BookCatalogModel
         $statement->execute();
 
         return (int) $statement->fetchColumn();
+    }
+
+    /**
+     * Returns one book by its id, or null when no row matches.
+     */
+    public function find(int $id): ?array
+    {
+        // جلب كتاب واحد بالمعرف
+        $statement = $this->db->prepare(
+            'SELECT id, inventory_number, title, author, notes
+            FROM books
+            WHERE id = :id
+            LIMIT 1'
+        );
+        $statement->bindValue(':id', $id, \PDO::PARAM_INT);
+        $statement->execute();
+        $row = $statement->fetch();
+
+        return $row === false ? null : $row;
     }
 
     /**

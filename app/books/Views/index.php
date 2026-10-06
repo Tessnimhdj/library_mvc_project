@@ -88,7 +88,14 @@ $pageLink = static function (int $targetPage) use ($listUrl, $q): string {
                         ?>
                         <tr>
                             <td><?= htmlspecialchars((string) ($book['inventory_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td><?= htmlspecialchars((string) ($book['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php
+                                $showParams = ['id' => (int) ($book['id'] ?? 0)];
+                                if ($q !== '') {
+                                    $showParams['q'] = $q;
+                                }
+                                $showParams['page'] = (int) $page;
+                                $showUrl = \Router::url('/book/show') . '?' . http_build_query($showParams);
+                            ?><a href="<?= htmlspecialchars($showUrl, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars((string) ($book['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></a></td>
                             <td><?= htmlspecialchars((string) ($book['author'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                             <td><?= htmlspecialchars($notes, ENT_QUOTES, 'UTF-8'); ?></td>
                         </tr>
