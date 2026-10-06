@@ -14,6 +14,9 @@ require_once __DIR__ . '/../../../Config/Config.php';
 
 class UploadController {
     private const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private const MAX_ROWS = 20000;
+    private const READ_CHUNK = 1000;
+    private const FAILED_REPORT_LIMIT = 50;
 
     private const ALLOWED_MIME_TYPES = [
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -26,10 +29,14 @@ class UploadController {
         $this->bookModel = new BookModel();
     }
 
+    /**
+     * Shows the upload form and any message saved by the importer.
+     */
     public function index() {
         $successMsg = $_SESSION['success_msg'] ?? '';
         $errorMsg = $_SESSION['error_msg'] ?? '';
-        unset($_SESSION['success_msg'], $_SESSION['error_msg'], $_SESSION['err_msg']);
+        $import_report = $_SESSION['import_report'] ?? null;
+        unset($_SESSION['success_msg'], $_SESSION['error_msg'], $_SESSION['err_msg'], $_SESSION['import_report']);
 
         $helper = new RecaptchaHelper();
         $recaptchaScript = $helper->renderScript('en');
@@ -112,53 +119,18 @@ class UploadController {
                 $this->logError('move_uploaded_file failed');
                 $_SESSION['error_msg'] = 'The file could not be saved.';
             } else {
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($uploadPath);
-                $reader->setReadDataOnly(true);
-                $spreadsheet = $reader->load($uploadPath);
-                $rows = $spreadsheet->getActiveSheet()->toArray();
-                array_shift($rows);
-
-                $added = 0;
-                $skipped = 0;
-
-                $this->bookModel->beginTransaction();
-                try {
-                    foreach ($rows as $row) {
-                        if (!is_array($row)) {
-                            continue;
-                        }
-
-                        $inventory = trim((string) ($row[0] ?? ''));
-                        $title = trim((string) ($row[1] ?? ''));
-                        $author = trim((string) ($row[2] ?? ''));
-                        $notes = trim((string) ($row[3] ?? ''));
-
-                        if ($inventory === '' && $title === '' && $author === '' && $notes === '') {
-                            continue;
-                        }
-
-                        if ($inventory === '') {
-                            $skipped++;
-                            continue;
-                        }
-
-                        if ($this->bookModel->insertIfNotExists($inventory, $title, $author, $notes)) {
-                            $added++;
-                        } else {
-                            $skipped++;
-                        }
-                    }
-
-                    $this->bookModel->commit();
-                } catch (\Throwable $e) {
-                    $this->bookModel->rollBack();
-                    throw $e;
-                }
-
-                if ($added === 0 && $skipped === 0) {
+                $report = $this->importWorkbook($uploadPath);
+                if ($report === null) {
+                    $_SESSION['error_msg'] = 'The file has too many rows.';
+                } elseif ($report['added'] === 0 && $report['skipped'] === 0 && $report['failed_count'] === 0) {
                     $_SESSION['error_msg'] = 'The file has no rows to import.';
                 } else {
-                    $_SESSION['success_msg'] = "Import complete: {$added} added, {$skipped} skipped.";
+                    $message = "Import complete: {$report['added']} added, {$report['skipped']} skipped.";
+                    if ($report['failed_count'] > 0) {
+                        $message .= ", {$report['failed_count']} failed";
+                    }
+                    $_SESSION['success_msg'] = $message;
+                    $_SESSION['import_report'] = $report;
                 }
             }
         } catch (\Throwable $e) {
@@ -173,6 +145,95 @@ class UploadController {
 
         header('Location: ' . $redirectUrl);
         exit;
+    }
+
+    /**
+     * Reads an xlsx workbook in windows and imports each window.
+     * Row 1 is the header. Data columns are inventory number, title, author, and notes.
+     * Returns null when the worksheet has more than the allowed number of rows.
+     *
+     * @return array{added: int, skipped: int, failed: array<int, array{row: int, reason: string}>, failed_count: int}|null
+     */
+    private function importWorkbook(string $path): ?array
+    {
+        // معرفة عدد الصفوف بدون تحميل الورقة
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $worksheetInfo = $reader->listWorksheetInfo($path);
+        $totalRows = (int) ($worksheetInfo[0]['totalRows'] ?? 0);
+
+        if ($totalRows > self::MAX_ROWS) {
+            $this->logError('Import rejected because the worksheet has too many rows');
+            return null;
+        }
+
+        $report = [
+            'added' => 0,
+            'skipped' => 0,
+            'failed' => [],
+            'failed_count' => 0,
+        ];
+
+        // قراءة كل نافذة ثم تجميع النتيجة
+        for ($startRow = 2; $startRow <= $totalRows; $startRow += self::READ_CHUNK) {
+            $endRow = min($startRow + self::READ_CHUNK - 1, $totalRows);
+            $rows = $this->readWorksheetWindow($reader, $path, $startRow, $endRow);
+            $chunk = $this->bookModel->importRows($rows, $startRow);
+            $this->mergeImportReport($report, $chunk);
+            unset($rows, $chunk);
+        }
+
+        return $report;
+    }
+
+    /**
+     * Loads only the requested worksheet rows and returns inventory, title, author, and notes.
+     */
+    private function readWorksheetWindow($reader, string $path, int $startRow, int $endRow): array
+    {
+        // قبول صفوف النافذة الحالية فقط
+        $reader->setReadFilter(new class($startRow, $endRow) implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+            public function __construct(private int $startRow, private int $endRow)
+            {
+            }
+
+            public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool
+            {
+                return $row >= $this->startRow && $row <= $this->endRow;
+            }
+        });
+
+        $spreadsheet = $reader->load($path);
+        $rows = $spreadsheet->getActiveSheet()->rangeToArray(
+            'A' . $startRow . ':D' . $endRow,
+            null,
+            false,
+            false,
+            false
+        );
+
+        // تحرير الذاكرة بعد كل نافذة
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+
+        return $rows;
+    }
+
+    /**
+     * Adds one window result to the full import report and keeps the first 50 failures.
+     */
+    private function mergeImportReport(array &$report, array $chunk): void
+    {
+        $report['added'] += (int) ($chunk['added'] ?? 0);
+        $report['skipped'] += (int) ($chunk['skipped'] ?? 0);
+        $report['failed_count'] += (int) ($chunk['failed_count'] ?? 0);
+
+        foreach ($chunk['failed'] ?? [] as $failure) {
+            if (count($report['failed']) >= self::FAILED_REPORT_LIMIT) {
+                break;
+            }
+            $report['failed'][] = $failure;
+        }
     }
 
     /**
